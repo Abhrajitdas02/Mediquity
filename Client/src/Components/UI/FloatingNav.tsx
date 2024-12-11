@@ -6,9 +6,10 @@ import {
   useMotionValueEvent,
 } from "framer-motion";
 import { cn } from "../../Util/cn.ts";
-import { Link, useNavigate } from "react-router-dom";
-import { IoIosLogOut } from "react-icons/io";
+import { useNavigate } from "react-router-dom";
 import { MdOutlineLogin, MdOutlineLogout } from "react-icons/md";
+import { setToken, setUser } from "../../Slice/authSlice.js";
+import { useSelector, useDispatch } from "react-redux";
 
 export const FloatingNav = ({
   navItems,
@@ -23,13 +24,15 @@ export const FloatingNav = ({
 }) => {
   const { scrollYProgress } = useScroll();
   const navigate = useNavigate();
-  const [visible, setVisible] = useState(false);
+  const dispatch = useDispatch();
+  const [visible, setVisible] = useState(true);
+  const { token } = useSelector((state: any) => state.auth);
 
   useMotionValueEvent(scrollYProgress, "change", (current) => {
-    let direction = current - scrollYProgress.getPrevious();
+    let direction = current - (scrollYProgress.getPrevious?.() ?? 0);
 
     if (scrollYProgress.get() < 0.001) {
-      setVisible(false);
+      setVisible(true);
     } else {
       if (direction < 0) {
         setVisible(true);
@@ -40,10 +43,13 @@ export const FloatingNav = ({
   });
 
   const handleLogout = () => {
-    sessionStorage.removeItem("token");
-    sessionStorage.removeItem("user");
-    window.location.href = "/";
+    dispatch(setToken(null));
+    dispatch(setUser(null));
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    navigate("/");
   };
+
   return (
     <AnimatePresence mode="wait">
       <motion.div
@@ -70,9 +76,7 @@ export const FloatingNav = ({
             className={cn(
               "relative dark:text-neutral-50 items-center flex space-x-1 text-neutral-600 dark:hover:text-neutral-300 hover:text-neutral-500 cursor-pointer",
               {
-                hidden:
-                  navItem.name === "Profile" &&
-                  !sessionStorage.getItem("token"),
+                hidden: navItem.name === "Profile" && !token,
               }
             )}
           >
@@ -83,7 +87,7 @@ export const FloatingNav = ({
           </div>
         ))}
 
-        {!sessionStorage.getItem("token") ? (
+        {!token ? (
           <a href="/login">
             <button className="border text-sm font-medium relative border-neutral-200 dark:border-white/[0.2] text-black dark:text-white px-4 py-2 rounded-full">
               <span className="uppercase tracking-[2px] md:block hidden">
